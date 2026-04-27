@@ -51,7 +51,7 @@
     <div id="start-screen">
         <div class="start-content">
             <h1 style="color: #ffcc00;">HEALTH FIGHTER</h1>
-            <p>請輸入代號並按下按鈕（題目將立即載入）：</p>
+            <p>請輸入代號並按下按鈕：</p>
             <input type="text" id="player-name-input" placeholder="輸入名字..." maxlength="10">
             <br>
             <button onclick="startGame()">進入戰場</button>
@@ -181,41 +181,3 @@
             setTimeout(loadQuiz, 1000);
         }
     }
-
-    function launchProjectile(attacker) {
-        const p = document.getElementById('projectile');
-        p.style.display = 'block'; p.style.animation = 'none'; void p.offsetWidth; 
-        if (attacker === 'player') {
-            p.style.backgroundImage = "url('item_good.png')";
-            p.style.left = '200px'; p.style.right = 'auto'; p.style.bottom = '150px';
-            p.style.animation = 'fly-right 0.8s forwards';
-        } else {
-            p.style.backgroundImage = "url('item_bad.png')";
-            p.style.right = '200px'; p.style.left = 'auto'; p.style.bottom = '150px';
-            p.style.animation = 'fly-left 0.8s forwards';
-        }
-        setTimeout(() => p.style.display = 'none', 800);
-    }
-
-    function showBattleText(text, color) {
-        const b = document.getElementById('battle-text');
-        b.innerText = text; b.style.color = color; b.style.textShadow = `0 0 15px ${color}`;
-        b.classList.add('battle-text-pop');
-        setTimeout(() => b.classList.remove('battle-text-pop'), 600);
-    }
-
-    function updateUI() {
-        document.getElementById('player-hp').style.width = playerHP + "%";
-        document.getElementById('enemy-hp').style.width = enemyHP + "%";
-        if (enemyHP <= 0 || playerHP <= 0) {
-            clearInterval(timerInterval);
-            document.getElementById('ko-text').innerText = enemyHP <= 0 ? "K.O.! 健康獲勝！" : "妳被打敗了...";
-            document.getElementById('ko-text').style.opacity = 1;
-            setTimeout(() => {
-                location.reload(); // 結束後直接重載網頁，保持最乾淨的狀態
-            }, 3000);
-        }
-    }
-</script>
-</body>
-</html>
