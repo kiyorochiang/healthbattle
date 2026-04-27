@@ -6,11 +6,39 @@
     <style>
         body { background: #111; color: white; font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         
-        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: flex; align-items: center; justify-content: center; z-index: 100; text-align: center; }
-        .start-content { background: #333; padding: 40px; border: 4px solid #ffcc00; border-radius: 15px; box-shadow: 0 0 30px rgba(255, 204, 0, 0.5); }
+        /* 1. 初始命名與結算畫面 */
+        #start-screen, #summary-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); display: flex; align-items: center;
+            justify-content: center; z-index: 100; text-align: center;
+        }
+        #summary-screen { display: none; z-index: 110; }
+
+        .modal-content {
+            background: #333; padding: 30px; border: 4px solid #ffcc00; border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.5); min-width: 450px;
+        }
+
+        /* 角色選擇 */
+        .char-selector { display: flex; justify-content: center; gap: 15px; margin: 20px 0; }
+        .char-option {
+            width: 80px; height: 100px; border: 2px solid #555; border-radius: 8px;
+            cursor: pointer; background-size: contain; background-repeat: no-repeat;
+            background-position: center; transition: 0.3s; background-color: #222;
+        }
+        .char-option:hover { border-color: #aaa; background-color: #444; }
+        .char-option.selected { border-color: #ffcc00; background-color: #554400; box-shadow: 0 0 15px #ffcc00; transform: scale(1.1); }
+
         #player-name-input { padding: 12px; font-size: 20px; border-radius: 5px; border: none; width: 250px; text-align: center; margin-bottom: 20px; outline: none; }
 
-        #stage { width: 800px; height: 400px; background-image: url('background.png'); background-size: cover; background-position: center; border: 4px solid #555; position: relative; display: none; justify-content: space-between; align-items: flex-end; padding: 20px; box-sizing: border-box; }
+        /* 2. 戰鬥舞台 */
+        #stage { 
+            width: 800px; height: 400px; 
+            background-image: url('background.png'); 
+            background-size: cover; background-position: center;
+            border: 4px solid #555; position: relative; 
+            display: none; justify-content: space-between; align-items: flex-end; padding: 20px; box-sizing: border-box; 
+        }
         
         .health-container { position: absolute; top: 20px; width: 300px; z-index: 10; }
         #player-ui { left: 20px; }
@@ -21,40 +49,56 @@
         #timer { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 60px; color: #ffcc00; font-family: "OCR A Extended", monospace; font-weight: bold; text-shadow: 0 0 15px rgba(255, 204, 0, 0.8); }
 
         .character { width: 200px; height: 250px; position: relative; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transition: transform 0.1s; }
-        #player { background-image: url('player.png'); left: 0px; }
+        #player { left: 0px; }
         #enemy { background-image: url('boss.png'); right: 0px; }
         #projectile { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; display: none; z-index: 15; pointer-events: none; }
 
-        #battle-text { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); font-size: 45px; font-weight: bold; opacity: 0; z-index: 40; pointer-events: none; }
-        #ko-text { position: absolute; top: 150px; left: 50%; transform: translateX(-50%); font-size: 60px; color: #f1c40f; text-shadow: 0 0 20px #f1c40f; z-index: 50; opacity: 0; font-weight: bold; }
+        #battle-text { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); font-size: 40px; font-weight: bold; opacity: 0; z-index: 40; pointer-events: none; white-space: nowrap; }
 
+        /* 動畫 */
         .player-attack { animation: shake 0.3s; }
         .enemy-attack { animation: shake 0.3s; }
         @keyframes shake { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        
         @keyframes fly-right { 0% { transform: translateX(100px) translateY(0) rotate(0deg); opacity: 1; } 50% { transform: translateX(300px) translateY(-30px) rotate(180deg); opacity: 1; } 100% { transform: translateX(500px) translateY(0) rotate(360deg); opacity: 0; } }
         @keyframes fly-left { 0% { transform: translateX(-100px) translateY(0) rotate(0deg); opacity: 1; } 50% { transform: translateX(-300px) translateY(-30px) rotate(-180deg); opacity: 1; } 100% { transform: translateX(-500px) translateY(0) rotate(-360deg); opacity: 0; } }
-
-        .battle-text-pop { animation: battle-text-pop 0.6s ease-out; }
+        .battle-text-pop { animation: battle-text-pop 0.8s ease-out; }
         @keyframes battle-text-pop { 0% { opacity: 0; transform: translate(-50%, 0); } 20% { opacity: 1; transform: translate(-50%, -20px); } 100% { opacity: 0; transform: translate(-50%, -40px); } }
 
+        /* 題目區 */
         #quiz-box { width: 800px; background: #333; border: 4px solid #555; padding: 25px; box-sizing: border-box; text-align: center; margin-top: 10px; display: none; }
         .options { display: flex; justify-content: center; gap: 30px; margin-top: 20px; }
         button { padding: 12px 30px; font-size: 20px; cursor: pointer; border: none; background: #eee; border-radius: 8px; font-weight: bold; transition: 0.2s; }
         button:hover { background: #ffcc00; transform: scale(1.05); }
         .timer-low { color: #ff0000 !important; animation: blink 0.5s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* 結算畫面文字樣式 */
+        #result-status { font-size: 60px; font-weight: bold; margin-bottom: 30px; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <div class="start-content">
+        <div class="modal-content">
             <h1 style="color: #ffcc00;">HEALTH FIGHTER</h1>
-            <p>請輸入代號並按下按鈕：</p>
-            <input type="text" id="player-name-input" placeholder="輸入名字..." maxlength="10">
+            <p>1. 選擇角色：</p>
+            <div class="char-selector">
+                <div class="char-option selected" id="opt-p1" style="background-image: url('player1.png');" onclick="pickChar(1)"></div>
+                <div class="char-option" id="opt-p2" style="background-image: url('player2.png');" onclick="pickChar(2)"></div>
+                <div class="char-option" id="opt-p3" style="background-image: url('player3.png');" onclick="pickChar(3)"></div>
+                <div class="char-option" id="opt-p4" style="background-image: url('player4.png');" onclick="pickChar(4)"></div>
+            </div>
+            <p>2. 輸入戰士代號：</p>
+            <input type="text" id="player-name-input" placeholder="名字..." maxlength="10">
             <br>
             <button onclick="startGame()">進入戰場</button>
+        </div>
+    </div>
+
+    <div id="summary-screen">
+        <div class="modal-content">
+            <div id="result-status">成功或失敗</div>
+            <button onclick="location.reload()">重新開始</button>
         </div>
     </div>
 
@@ -68,7 +112,6 @@
             <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background: #f00;"></div></div>
         </div>
         <div id="timer">7</div>
-        <div id="ko-text">K.O.!</div>
         <div id="player" class="character"></div>
         <div id="enemy" class="character"></div>
         <div id="projectile"></div>
@@ -76,7 +119,7 @@
     </div>
 
     <div id="quiz-box">
-        <h2 id="question-text">準備中...</h2>
+        <h2 id="question-text" style="margin: 0;">載入中...</h2>
         <div class="options">
             <button onclick="handleBtnClick(0)" id="opt0">選項 A</button>
             <button onclick="handleBtnClick(1)" id="opt1">選項 B</button>
@@ -84,34 +127,34 @@
     </div>
 
 <script>
-   const quizData = [
+    const quizData = [
         { q: "成人每日建議飲水量是體重(kg)乘以多少？", options: ["30-35cc", "10-15cc"], correct: 0, move: "水之波導！" },
         { q: "攝取過多手搖飲，最直接影響的健康指標是？", options: ["視力衰退", "血糖與體脂"], correct: 1, move: "數據淨化！" },
         { q: "哪種營養素是人體組織修復與肌肉合成的主要來源？", options: ["蛋白質", "單糖類"], correct: 0, move: "肌肉強化！" },
         { q: "長期『久坐』對身體最明顯的危害是？", options: ["心肺與代謝下降", "頭髮生長變慢"], correct: 0, move: "深蹲反擊！" },
-        { q: "世界衛生組織建議，成年人每週應至少進行多少分鐘的中強度運動？", options: ["150 分鐘", "30 分鐘"], correct: 0, move: "有氧衝擊！" },
-        { q: "為了維持良好的睡眠規律，睡前一小時應盡量避免？", options: ["藍光螢幕刺激", "喝溫白開水"], correct: 0, move: "安眠護盾！" },
-        { q: "護眼『20-20-20』原則是指用眼 20 分鐘後，應遠眺 20 英呎處幾秒？", options: ["60 秒", "20 秒"], correct: 1, move: "視力修復！" },
-        { q: "配戴眼鏡若產生視覺暈眩(Cyber-Sickness)，首要措施是？", options: ["立即取下並休息", "閉上眼睛繼續戴"], correct: 0, move: "系統修復！" },
-        { q: "當感到高度情緒壓力時，哪種行為有助於活化副交感神經以放鬆？", options: ["深長的腹式呼吸", "快速連續憋氣"], correct: 0, move: "正念衝擊！" }
+        { q: "每週應至少進行多少分鐘的中強度有氧運動？", options: ["150 分鐘", "30 分鐘"], correct: 0, move: "有氧衝擊！" },
+        { q: "為了維護睡眠品質，睡前應避免？", options: ["藍光螢幕刺激", "喝溫白開水"], correct: 0, move: "安眠護盾！" },
+        { q: "護眼原則：用眼 20 分鐘後應遠眺幾秒？", options: ["60 秒", "20 秒"], correct: 1, move: "視力修復！" },
+        { q: "眼鏡若產生視覺暈眩，首要措施是？", options: ["立即取下休息", "繼續配戴"], correct: 0, move: "系統修復！" },
+        { q: "哪種行為有助於活化副交感神經以放鬆壓力？", options: ["腹式深呼吸", "快速憋氣"], correct: 0, move: "正念衝擊！" }
     ];
 
-    let playerHP = 100, enemyHP = 100, currentQuizIndex = 0, timeLeft = 7, timerInterval;
+    let playerHP = 100, enemyHP = 100, currentQuizIndex = 0, timeLeft = 7, timerInterval, selectedChar = "player1.png";
+
+    function pickChar(num) {
+        selectedChar = "player" + num + ".png";
+        document.querySelectorAll('.char-option').forEach(el => el.classList.remove('selected'));
+        document.getElementById('opt-p' + num).classList.add('selected');
+    }
 
     function startGame() {
         const nameInput = document.getElementById('player-name-input').value;
         document.getElementById('display-player-name').innerText = nameInput.trim() === "" ? "健康戰士" : nameInput;
-        
+        document.getElementById('player').style.backgroundImage = "url('" + selectedChar + "')";
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('stage').style.display = 'flex';
         document.getElementById('quiz-box').style.display = 'block';
-        
-        quizData.sort(() => Math.random() - 0.5);
-        currentQuizIndex = 0;
-        playerHP = 100;
-        enemyHP = 100;
-        updateUI();
-        loadQuiz(); 
+        resetGame();
     }
 
     function loadQuiz() {
@@ -132,10 +175,7 @@
             timeLeft--;
             document.getElementById('timer').innerText = timeLeft;
             if (timeLeft <= 3) document.getElementById('timer').classList.add('timer-low');
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                processResult(false, "時間到！");
-            }
+            if (timeLeft <= 0) { clearInterval(timerInterval); processResult(false, "時間到！"); }
         }, 1000);
     }
 
@@ -158,25 +198,19 @@
             setTimeout(() => { playerHP -= 20; updateUI(); }, 800);
             showBattleText(msg, "#f00");
         }
-        
         setTimeout(() => {
             document.getElementById('player').classList.remove('player-attack');
             document.getElementById('enemy').classList.remove('enemy-attack');
         }, 300);
-
         if (playerHP > 0 && enemyHP > 0) {
             currentQuizIndex = (currentQuizIndex + 1) % quizData.length;
             setTimeout(loadQuiz, 1000);
         }
     }
 
-    // --- 以下是補齊的失蹤函數 ---
     function launchProjectile(attacker) {
         const p = document.getElementById('projectile');
-        p.style.display = 'block';
-        p.style.animation = 'none';
-        void p.offsetWidth; // 觸發重繪以重新啟動動畫
-
+        p.style.display = 'block'; p.style.animation = 'none'; void p.offsetWidth; 
         if (attacker === 'player') {
             p.style.backgroundImage = "url('item_good.png')";
             p.style.left = '200px'; p.style.right = 'auto'; p.style.bottom = '150px';
@@ -186,28 +220,44 @@
             p.style.right = '200px'; p.style.left = 'auto'; p.style.bottom = '150px';
             p.style.animation = 'fly-left 0.8s forwards';
         }
-        setTimeout(() => { p.style.display = 'none'; }, 800);
+        setTimeout(() => p.style.display = 'none', 800);
     }
 
     function showBattleText(text, color) {
         const b = document.getElementById('battle-text');
-        b.innerText = text;
-        b.style.color = color;
-        b.style.textShadow = `0 0 15px ${color}`;
+        b.innerText = text; b.style.color = color; b.style.textShadow = `0 0 15px ${color}`;
         b.classList.add('battle-text-pop');
-        setTimeout(() => { b.classList.remove('battle-text-pop'); }, 600);
+        setTimeout(() => b.classList.remove('battle-text-pop'), 600);
     }
 
     function updateUI() {
         document.getElementById('player-hp').style.width = playerHP + "%";
         document.getElementById('enemy-hp').style.width = enemyHP + "%";
-
         if (enemyHP <= 0 || playerHP <= 0) {
             clearInterval(timerInterval);
-            document.getElementById('ko-text').innerText = enemyHP <= 0 ? "K.O.! 健康獲勝！" : "妳被打敗了...";
-            document.getElementById('ko-text').style.opacity = 1;
-            setTimeout(() => { location.reload(); }, 3000);
+            setTimeout(showSummary, 1200);
         }
+    }
+
+    // --- 修改後的精簡結算邏輯 ---
+    function showSummary() {
+        document.getElementById('quiz-box').style.display = 'none';
+        document.getElementById('summary-screen').style.display = 'flex';
+        const resultStatus = document.getElementById('result-status');
+
+        if (enemyHP <= 0) {
+            resultStatus.innerText = "挑戰成功！";
+            resultStatus.style.color = "#0f0";
+        } else {
+            resultStatus.innerText = "挑戰失敗";
+            resultStatus.style.color = "#f00";
+        }
+    }
+
+    function resetGame() {
+        playerHP = 100; enemyHP = 100; currentQuizIndex = 0;
+        quizData.sort(() => Math.random() - 0.5);
+        updateUI(); loadQuiz(); 
     }
 </script>
 </body>
