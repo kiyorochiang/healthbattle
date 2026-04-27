@@ -23,7 +23,7 @@
         .character { width: 200px; height: 250px; position: relative; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transition: transform 0.1s; }
         #player { background-image: url('player.png'); left: 0px; }
         #enemy { background-image: url('boss.png'); right: 0px; }
-        #projectile { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; display: none; z-index: 15; }
+        #projectile { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; display: none; z-index: 15; pointer-events: none; }
 
         #battle-text { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); font-size: 45px; font-weight: bold; opacity: 0; z-index: 40; pointer-events: none; }
         #ko-text { position: absolute; top: 150px; left: 50%; transform: translateX(-50%); font-size: 60px; color: #f1c40f; text-shadow: 0 0 20px #f1c40f; z-index: 50; opacity: 0; font-weight: bold; }
@@ -85,22 +85,15 @@
 
 <script>
    const quizData = [
-        // --- 1. 營養與生理基礎 ---
         { q: "成人每日建議飲水量是體重(kg)乘以多少？", options: ["30-35cc", "10-15cc"], correct: 0, move: "水之波導！" },
         { q: "攝取過多手搖飲，最直接影響的健康指標是？", options: ["視力衰退", "血糖與體脂"], correct: 1, move: "數據淨化！" },
         { q: "哪種營養素是人體組織修復與肌肉合成的主要來源？", options: ["蛋白質", "單糖類"], correct: 0, move: "肌肉強化！" },
-
-        // --- 2. 生活習慣與亞健康 ---
         { q: "長期『久坐』對身體最明顯的危害是？", options: ["心肺與代謝下降", "頭髮生長變慢"], correct: 0, move: "深蹲反擊！" },
         { q: "世界衛生組織建議，成年人每週應至少進行多少分鐘的中強度運動？", options: ["150 分鐘", "30 分鐘"], correct: 0, move: "有氧衝擊！" },
         { q: "為了維持良好的睡眠規律，睡前一小時應盡量避免？", options: ["藍光螢幕刺激", "喝溫白開水"], correct: 0, move: "安眠護盾！" },
-
-        // --- 3. 數位健康與 AI 互動 (妳的研究核心) ---
         { q: "護眼『20-20-20』原則是指用眼 20 分鐘後，應遠眺 20 英呎處幾秒？", options: ["60 秒", "20 秒"], correct: 1, move: "視力修復！" },
         { q: "配戴 AI 智能眼鏡若產生視覺暈眩(Cyber-Sickness)，首要措施是？", options: ["立即取下並休息", "閉上眼睛繼續戴"], correct: 0, move: "系統修復！" },
         { q: "在使用 AI 助理時，為了保護隱私，何種資訊不建議主動揭露？", options: ["個人帳務密碼", "當下的心情"], correct: 0, move: "數據防火牆！" },
-
-        // --- 4. 心理健康 ---
         { q: "當感到高度情緒壓力時，哪種行為有助於活化副交感神經以放鬆？", options: ["深長的腹式呼吸", "快速連續憋氣"], correct: 0, move: "正念衝擊！" }
     ];
 
@@ -110,12 +103,10 @@
         const nameInput = document.getElementById('player-name-input').value;
         document.getElementById('display-player-name').innerText = nameInput.trim() === "" ? "健康戰士" : nameInput;
         
-        // --- 核心優化：先顯示畫面，再立即載入題目 ---
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('stage').style.display = 'flex';
         document.getElementById('quiz-box').style.display = 'block';
         
-        // 直接執行，不使用任何延遲
         quizData.sort(() => Math.random() - 0.5);
         currentQuizIndex = 0;
         playerHP = 100;
@@ -130,8 +121,6 @@
         document.getElementById('question-text').innerText = q.q;
         document.getElementById('opt0').innerText = q.options[0];
         document.getElementById('opt1').innerText = q.options[1];
-        
-        // 題目出現後立即啟動計時
         startQuestionTimer();
     }
 
@@ -181,3 +170,46 @@
             setTimeout(loadQuiz, 1000);
         }
     }
+
+    // --- 以下是補齊的失蹤函數 ---
+    function launchProjectile(attacker) {
+        const p = document.getElementById('projectile');
+        p.style.display = 'block';
+        p.style.animation = 'none';
+        void p.offsetWidth; // 觸發重繪以重新啟動動畫
+
+        if (attacker === 'player') {
+            p.style.backgroundImage = "url('item_good.png')";
+            p.style.left = '200px'; p.style.right = 'auto'; p.style.bottom = '150px';
+            p.style.animation = 'fly-right 0.8s forwards';
+        } else {
+            p.style.backgroundImage = "url('item_bad.png')";
+            p.style.right = '200px'; p.style.left = 'auto'; p.style.bottom = '150px';
+            p.style.animation = 'fly-left 0.8s forwards';
+        }
+        setTimeout(() => { p.style.display = 'none'; }, 800);
+    }
+
+    function showBattleText(text, color) {
+        const b = document.getElementById('battle-text');
+        b.innerText = text;
+        b.style.color = color;
+        b.style.textShadow = `0 0 15px ${color}`;
+        b.classList.add('battle-text-pop');
+        setTimeout(() => { b.classList.remove('battle-text-pop'); }, 600);
+    }
+
+    function updateUI() {
+        document.getElementById('player-hp').style.width = playerHP + "%";
+        document.getElementById('enemy-hp').style.width = enemyHP + "%";
+
+        if (enemyHP <= 0 || playerHP <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('ko-text').innerText = enemyHP <= 0 ? "K.O.! 健康獲勝！" : "妳被打敗了...";
+            document.getElementById('ko-text').style.opacity = 1;
+            setTimeout(() => { location.reload(); }, 3000);
+        }
+    }
+</script>
+</body>
+</html>
