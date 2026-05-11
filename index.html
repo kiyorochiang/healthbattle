@@ -2,21 +2,20 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>健康知識格鬥賽</title>
+    <title>健康知識格鬥賽 </title>
     <style>
         body { background: #111; color: white; font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         
-        /* 1. 初始命名與結算畫面 */
-        #start-screen, #summary-screen {
+        /* 1. 覆蓋層通用樣式 */
+        .overlay-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.95); display: flex; align-items: center;
             justify-content: center; z-index: 100; text-align: center;
         }
-        #summary-screen { display: none; z-index: 110; }
 
         .modal-content {
             background: #333; padding: 30px; border: 4px solid #ffcc00; border-radius: 15px;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.5); min-width: 450px;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.5); min-width: 450px; max-width: 600px;
         }
 
         /* 角色選擇 */
@@ -30,6 +29,12 @@
         .char-option.selected { border-color: #ffcc00; background-color: #554400; box-shadow: 0 0 15px #ffcc00; transform: scale(1.1); }
 
         #player-name-input { padding: 12px; font-size: 20px; border-radius: 5px; border: none; width: 250px; text-align: center; margin-bottom: 20px; outline: none; }
+
+        /* 錯題回顧樣式 */
+        #review-list { text-align: left; max-height: 300px; overflow-y: auto; margin: 20px 0; padding: 10px; background: #222; border-radius: 8px; }
+        .review-item { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .review-q { font-weight: bold; color: #ffcc00; }
+        .review-a { color: #0f0; margin-top: 5px; }
 
         /* 2. 戰鬥舞台 */
         #stage { 
@@ -46,7 +51,7 @@
         .hp-bar { width: 100%; height: 20px; background: #500; border: 2px solid #fff; margin-top: 5px; overflow: hidden; }
         .hp-fill { height: 100%; width: 100%; background: #0f0; transition: width 0.3s; box-shadow: 0 0 10px #0f0; }
 
-        #timer { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 60px; color: #ffcc00; font-family: "OCR A Extended", monospace; font-weight: bold; text-shadow: 0 0 15px rgba(255, 204, 0, 0.8); }
+        #timer { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 60px; color: #ffcc00; font-family: 'OCR A Extended', monospace; font-weight: bold; text-shadow: 0 0 15px rgba(255, 204, 0, 0.8); }
 
         .character { width: 200px; height: 250px; position: relative; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transition: transform 0.1s; }
         #player { left: 0px; }
@@ -72,16 +77,15 @@
         .timer-low { color: #ff0000 !important; animation: blink 0.5s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* 結算畫面文字樣式 */
-        #result-status { font-size: 60px; font-weight: bold; margin-bottom: 30px; }
+        #result-status { font-size: 60px; font-weight: bold; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
+    <div id="start-screen" class="overlay-screen">
         <div class="modal-content">
             <h1 style="color: #ffcc00;">HEALTH FIGHTER</h1>
-            <p>1. 選擇角色：</p>
+            <p>1. 選擇妳的角色：</p>
             <div class="char-selector">
                 <div class="char-option selected" id="opt-p1" style="background-image: url('player1.png');" onclick="pickChar(1)"></div>
                 <div class="char-option" id="opt-p2" style="background-image: url('player2.png');" onclick="pickChar(2)"></div>
@@ -91,20 +95,40 @@
             <p>2. 輸入戰士代號：</p>
             <input type="text" id="player-name-input" placeholder="名字..." maxlength="10">
             <br>
-            <button onclick="startGame()">進入戰場</button>
+            <button onclick="showInstructions()">下一步</button>
         </div>
     </div>
 
-    <div id="summary-screen">
+    <div id="instruction-screen" class="overlay-screen" style="display: none;">
         <div class="modal-content">
-            <div id="result-status">成功或失敗</div>
-            <button onclick="location.reload()">重新開始</button>
+            <h2 style="color: #ffcc00;">戰鬥指南</h2>
+            <div style="text-align: left; display: inline-block; margin-bottom: 25px; line-height: 1.8;">
+                <li>🎯 每一題只有7秒思考時間。</li>
+                <li>✅ 答對發動攻擊，答錯或超時會受傷。</li>
+                <li>🏅 擊敗魔王即可獲得勝利。</li>
+            </div>
+            <br>
+            <button onclick="startGame()">進入戰場！</button>
+        </div>
+    </div>
+
+    <div id="summary-screen" class="overlay-screen" style="display: none;">
+        <div class="modal-content">
+            <div id="result-status">結果</div>
+            <div id="review-area" style="display: none;">
+                <h3 style="margin-top: 0;">錯題回顧</h3>
+                <div id="review-list"></div>
+            </div>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="btn-review" onclick="toggleReview()">查看錯題回顧</button>
+                <button onclick="location.reload()">重新開始</button>
+            </div>
         </div>
     </div>
 
     <div id="stage">
         <div class="health-container" id="player-ui">
-            <div id="display-player-name" style="font-weight: bold; color: #3498db;">健康戰士</div>
+            <div id="display-player-name" style="font-weight: bold; color: #3498db;">玩家</div>
             <div class="hp-bar"><div id="player-hp" class="hp-fill"></div></div>
         </div>
         <div class="health-container" id="enemy-ui">
@@ -135,11 +159,12 @@
         { q: "每週應至少進行多少分鐘的中強度有氧運動？", options: ["150 分鐘", "30 分鐘"], correct: 0, move: "有氧衝擊！" },
         { q: "為了維護睡眠品質，睡前應避免？", options: ["藍光螢幕刺激", "喝溫白開水"], correct: 0, move: "安眠護盾！" },
         { q: "護眼原則：用眼 20 分鐘後應遠眺幾秒？", options: ["60 秒", "20 秒"], correct: 1, move: "視力修復！" },
-        { q: "眼鏡若產生視覺暈眩，首要措施是？", options: ["立即取下休息", "繼續配戴"], correct: 0, move: "系統修復！" },
+        { q: "配戴眼鏡若產生視覺暈眩，首要措施是？", options: ["立即取下休息", "繼續配戴"], correct: 0, move: "系統修復！" },
         { q: "哪種行為有助於活化副交感神經以放鬆壓力？", options: ["腹式深呼吸", "快速憋氣"], correct: 0, move: "正念衝擊！" }
     ];
 
     let playerHP = 100, enemyHP = 100, currentQuizIndex = 0, timeLeft = 7, timerInterval, selectedChar = "player1.png";
+    let wrongAnswers = []; // 新增：紀錄錯題
 
     function pickChar(num) {
         selectedChar = "player" + num + ".png";
@@ -147,13 +172,19 @@
         document.getElementById('opt-p' + num).classList.add('selected');
     }
 
-    function startGame() {
+    function showInstructions() {
         const nameInput = document.getElementById('player-name-input').value;
-        document.getElementById('display-player-name').innerText = nameInput.trim() === "" ? "健康戰士" : nameInput;
+        document.getElementById('display-player-name').innerText = nameInput.trim() === "" ? "玩家" : nameInput;
         document.getElementById('player').style.backgroundImage = "url('" + selectedChar + "')";
         document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('instruction-screen').style.display = 'flex';
+    }
+
+    function startGame() {
+        document.getElementById('instruction-screen').style.display = 'none';
         document.getElementById('stage').style.display = 'flex';
         document.getElementById('quiz-box').style.display = 'block';
+        quizData.sort(() => Math.random() - 0.5);
         resetGame();
     }
 
@@ -187,12 +218,18 @@
     }
 
     function processResult(isCorrect, msg) {
+        const q = quizData[currentQuizIndex];
         if (isCorrect) {
             document.getElementById('player').classList.add('player-attack');
             launchProjectile('player');
             setTimeout(() => { enemyHP -= 20; updateUI(); }, 800);
             showBattleText(msg, "#0f0");
         } else {
+            // 答錯或超時：存入錯題紀錄
+            wrongAnswers.push({
+                q: q.q,
+                a: q.options[q.correct]
+            });
             document.getElementById('enemy').classList.add('enemy-attack');
             launchProjectile('enemy');
             setTimeout(() => { playerHP -= 20; updateUI(); }, 800);
@@ -239,11 +276,11 @@
         }
     }
 
-    // --- 修改後的精簡結算邏輯 ---
     function showSummary() {
         document.getElementById('quiz-box').style.display = 'none';
         document.getElementById('summary-screen').style.display = 'flex';
         const resultStatus = document.getElementById('result-status');
+        const btnReview = document.getElementById('btn-review');
 
         if (enemyHP <= 0) {
             resultStatus.innerText = "挑戰成功！";
@@ -252,11 +289,37 @@
             resultStatus.innerText = "挑戰失敗";
             resultStatus.style.color = "#f00";
         }
+
+        // 如果沒有錯題，隱藏回顧按鈕
+        btnReview.style.display = wrongAnswers.length > 0 ? "inline-block" : "none";
+        
+        // 渲染錯題清單
+        const listContainer = document.getElementById('review-list');
+        listContainer.innerHTML = "";
+        wrongAnswers.forEach((item, index) => {
+            listContainer.innerHTML += `
+                <div class="review-item">
+                    <div class="review-q">${index + 1}. ${item.q}</div>
+                    <div class="review-a">正確答案：${item.a}</div>
+                </div>
+            `;
+        });
+    }
+
+    function toggleReview() {
+        const area = document.getElementById('review-area');
+        const btn = document.getElementById('btn-review');
+        if (area.style.display === "none") {
+            area.style.display = "block";
+            btn.innerText = "隱藏回顧";
+        } else {
+            area.style.display = "none";
+            btn.innerText = "查看錯題回顧";
+        }
     }
 
     function resetGame() {
-        playerHP = 100; enemyHP = 100; currentQuizIndex = 0;
-        quizData.sort(() => Math.random() - 0.5);
+        playerHP = 100; enemyHP = 100; currentQuizIndex = 0; wrongAnswers = [];
         updateUI(); loadQuiz(); 
     }
 </script>
