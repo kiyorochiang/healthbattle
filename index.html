@@ -4,135 +4,120 @@
     <meta charset="UTF-8">
     <title>健康知識格鬥賽</title>
     <style>
+        /* --- 基礎版面配置 --- */
         body { background: #111; color: white; font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         
-        /* 1. 覆蓋層通用樣式 */
-        .overlay-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95); display: flex; align-items: center;
-            justify-content: center; z-index: 100; text-align: center;
-        }
+        .overlay-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); display: flex; align-items: center; justify-content: center; z-index: 100; text-align: center; }
+        .modal-content { background: #333; padding: 30px; border: 4px solid #ffcc00; border-radius: 15px; box-shadow: 0 0 30px rgba(255, 204, 0, 0.5); min-width: 500px; max-width: 700px; }
 
-        .modal-content {
-            background: #333; padding: 30px; border: 4px solid #ffcc00; border-radius: 15px;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.5); min-width: 450px; max-width: 600px;
-        }
-
-        /* 角色選擇 */
-        .char-selector { display: flex; justify-content: center; gap: 15px; margin: 20px 0; }
-        .char-option {
-            width: 80px; height: 100px; border: 2px solid #555; border-radius: 8px;
-            cursor: pointer; background-size: contain; background-repeat: no-repeat;
-            background-position: center; transition: 0.3s; background-color: #222;
-        }
-        .char-option:hover { border-color: #aaa; background-color: #444; }
+        /* --- 選擇器樣式 --- */
+        .selector-group { margin: 15px 0; }
+        .char-selector { display: flex; justify-content: center; gap: 12px; margin: 10px 0; }
+        .char-option { width: 75px; height: 95px; border: 2px solid #555; border-radius: 8px; cursor: pointer; background-size: contain; background-repeat: no-repeat; background-position: center; transition: 0.3s; background-color: #222; }
         .char-option.selected { border-color: #ffcc00; background-color: #554400; box-shadow: 0 0 15px #ffcc00; transform: scale(1.1); }
 
-        #player-name-input { padding: 12px; font-size: 20px; border-radius: 5px; border: none; width: 250px; text-align: center; margin-bottom: 20px; outline: none; }
+        .diff-selector { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
+        .diff-btn { padding: 8px 15px; border: 2px solid #555; background: #222; color: #ccc; cursor: pointer; border-radius: 5px; transition: 0.3s; font-weight: bold; }
+        .diff-btn.selected { border-color: #ffcc00; color: #ffcc00; background: #443300; }
 
-        /* 錯題回顧樣式 */
-        #review-list { text-align: left; max-height: 300px; overflow-y: auto; margin: 20px 0; padding: 10px; background: #222; border-radius: 8px; }
-        .review-item { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .review-q { font-weight: bold; color: #ffcc00; }
-        .review-a { color: #0f0; margin-top: 5px; }
+        #player-name-input { padding: 12px; font-size: 18px; border-radius: 5px; border: none; width: 220px; text-align: center; margin-bottom: 10px; outline: none; }
 
-        /* 2. 戰鬥舞台 */
-        #stage { 
-            width: 800px; height: 400px; 
-            background-image: url('background.png'); 
-            background-size: cover; background-position: center;
-            border: 4px solid #555; position: relative; 
-            display: none; justify-content: space-between; align-items: flex-end; padding: 20px; box-sizing: border-box; 
-        }
-        
-        .health-container { position: absolute; top: 20px; width: 300px; z-index: 10; }
-        #player-ui { left: 20px; }
-        #enemy-ui { right: 20px; text-align: right; }
-        .hp-bar { width: 100%; height: 20px; background: #500; border: 2px solid #fff; margin-top: 5px; overflow: hidden; }
+        /* --- 戰鬥舞台 --- */
+        #stage { width: 800px; height: 400px; background-image: url('background.png'); background-size: cover; background-position: center; border: 4px solid #555; position: relative; display: none; justify-content: space-between; align-items: flex-end; padding: 20px; box-sizing: border-box; }
+        .health-container { position: absolute; top: 20px; width: 280px; z-index: 10; }
+        .hp-bar { width: 100%; height: 18px; background: #500; border: 2px solid #fff; margin-top: 5px; overflow: hidden; }
         .hp-fill { height: 100%; width: 100%; background: #0f0; transition: width 0.3s; box-shadow: 0 0 10px #0f0; }
+        #timer { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 60px; color: #ffcc00; font-family: 'OCR A Extended', monospace; font-weight: bold; }
 
-        #timer { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 60px; color: #ffcc00; font-family: 'OCR A Extended', monospace; font-weight: bold; text-shadow: 0 0 15px rgba(255, 204, 0, 0.8); }
-
-        .character { width: 200px; height: 250px; position: relative; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transition: transform 0.1s; }
+        .character { width: 200px; height: 250px; position: relative; background-size: contain; background-repeat: no-repeat; background-position: bottom center; transition: 0.2s, filter 0.3s; }
         #player { left: 0px; }
         #enemy { background-image: url('boss.png'); right: 0px; }
+        #enemy.enraged { filter: drop-shadow(0 0 20px #ff0000) saturate(2) contrast(1.2); }
+
         #projectile { position: absolute; width: 60px; height: 60px; background-size: contain; background-repeat: no-repeat; display: none; z-index: 15; pointer-events: none; }
+        #battle-text { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); font-size: 40px; font-weight: bold; opacity: 0; z-index: 40; pointer-events: none; white-space: nowrap; }
 
-        #battle-text { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); font-size: 40px; font-weight: bold; opacity: 0; z-index: 40; pointer-events: none; white-space: nowrap; }
+        /* --- 特效動畫 --- */
+        .shake-screen { animation: shake 0.2s; }
+        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(5px, 5px); } 75% { transform: translate(-5px, -5px); } }
+        @keyframes fly-right { 0% { transform: translateX(100px) rotate(0deg); opacity: 1; } 100% { transform: translateX(500px) rotate(360deg); opacity: 0; } }
+        @keyframes fly-left { 0% { transform: translateX(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateX(-500px) rotate(-360deg); opacity: 0; } }
+        .pop-animation { animation: pop 0.6s ease-out forwards; }
+        @keyframes pop { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: translateY(-40px); } }
 
-        /* 動畫 */
-        .player-attack { animation: shake 0.3s; }
-        .enemy-attack { animation: shake 0.3s; }
-        @keyframes shake { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        @keyframes fly-right { 0% { transform: translateX(100px) translateY(0) rotate(0deg); opacity: 1; } 50% { transform: translateX(300px) translateY(-30px) rotate(180deg); opacity: 1; } 100% { transform: translateX(500px) translateY(0) rotate(360deg); opacity: 0; } }
-        @keyframes fly-left { 0% { transform: translateX(-100px) translateY(0) rotate(0deg); opacity: 1; } 50% { transform: translateX(-300px) translateY(-30px) rotate(-180deg); opacity: 1; } 100% { transform: translateX(-500px) translateY(0) rotate(-360deg); opacity: 0; } }
-        .battle-text-pop { animation: battle-text-pop 0.8s ease-out; }
-        @keyframes battle-text-pop { 0% { opacity: 0; transform: translate(-50%, 0); } 20% { opacity: 1; transform: translate(-50%, -20px); } 100% { opacity: 0; transform: translate(-50%, -40px); } }
+        /* --- 題目佈局 --- */
+        #quiz-box { width: 800px; background: #333; border: 4px solid #555; padding: 20px; box-sizing: border-box; text-align: center; margin-top: 10px; display: none; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+        .quiz-btn { padding: 15px; font-size: 17px; cursor: pointer; border: none; background: #eee; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .quiz-btn:hover { background: #ffcc00; transform: scale(1.02); }
 
-        /* 題目區 */
-        #quiz-box { width: 800px; background: #333; border: 4px solid #555; padding: 25px; box-sizing: border-box; text-align: center; margin-top: 10px; display: none; }
-        .options { display: flex; justify-content: center; gap: 30px; margin-top: 20px; }
-        button { padding: 12px 30px; font-size: 20px; cursor: pointer; border: none; background: #eee; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #ffcc00; transform: scale(1.05); }
-        .timer-low { color: #ff0000 !important; animation: blink 0.5s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        #result-status { font-size: 60px; font-weight: bold; margin-bottom: 20px; }
+        /* --- 結算畫面錯題回顧 --- */
+        #review-area { width: 100%; margin: 20px 0; }
+        #review-list { text-align: left; max-height: 250px; overflow-y: auto; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        .review-item { border-bottom: 1px solid #333; padding: 10px 0; font-size: 15px; line-height: 1.6; }
+        .review-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
 
     <div id="start-screen" class="overlay-screen">
         <div class="modal-content">
-            <h1 style="color: #ffcc00;">HEALTH FIGHTER</h1>
-            <p>1. 選擇妳的角色：</p>
-            <div class="char-selector">
-                <div class="char-option selected" id="opt-p1" style="background-image: url('player1.png');" onclick="pickChar(1)"></div>
-                <div class="char-option" id="opt-p2" style="background-image: url('player2.png');" onclick="pickChar(2)"></div>
-                <div class="char-option" id="opt-p3" style="background-image: url('player3.png');" onclick="pickChar(3)"></div>
-                <div class="char-option" id="opt-p4" style="background-image: url('player4.png');" onclick="pickChar(4)"></div>
+            <h1 style="color: #ffcc00; margin-bottom: 5px;">健康戰士格鬥賽</h1>
+            <div class="selector-group">
+                <p style="margin: 5px;">1. 選擇角色：</p>
+                <div class="char-selector">
+                    <div class="char-option selected" id="opt-p1" style="background-image: url('player1.png');" onclick="pickChar(1)"></div>
+                    <div class="char-option" id="opt-p2" style="background-image: url('player2.png');" onclick="pickChar(2)"></div>
+                    <div class="char-option" id="opt-p3" style="background-image: url('player3.png');" onclick="pickChar(3)"></div>
+                    <div class="char-option" id="opt-p4" style="background-image: url('player4.png');" onclick="pickChar(4)"></div>
+                </div>
             </div>
-            <p>2. 輸入戰士代號：</p>
-            <input type="text" id="player-name-input" placeholder="名字..." maxlength="10">
-            <br>
-            <button onclick="showInstructions()">下一步</button>
+            <div class="selector-group">
+                <p style="margin: 5px;">2. 設定難度：</p>
+                <div class="diff-selector">
+                    <button class="diff-btn" id="diff-10" onclick="setDiff(10)">初級 (10s)</button>
+                    <button class="diff-btn selected" id="diff-7" onclick="setDiff(7)">普通 (7s)</button>
+                    <button class="diff-btn" id="diff-4" onclick="setDiff(4)">進階 (4s)</button>
+                </div>
+            </div>
+            <input type="text" id="player-name-input" placeholder="輸入戰士代號..." maxlength="10">
+            <br><br>
+            <button onclick="showInstructions()" style="padding: 10px 40px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ffcc00; border: none; border-radius: 5px;">下一步</button>
         </div>
     </div>
 
     <div id="instruction-screen" class="overlay-screen" style="display: none;">
         <div class="modal-content">
             <h2 style="color: #ffcc00;">戰鬥指南</h2>
-            <div style="text-align: left; display: inline-block; margin-bottom: 25px; line-height: 1.8;">
-                <li>🎯 每一題只有7秒思考時間。</li>
-                <li>✅ 答對發動攻擊，答錯或超時會受傷。</li>
-                <li>🏅 擊敗魔王即可獲得勝利。</li>
+            <div style="text-align: left; display: inline-block; line-height: 1.8; margin-bottom: 20px;">
+                <li>⏱️ 反應時間：每一題只有 <span id="display-diff-sec" style="color: #ffcc00; font-weight: bold;">7</span> 秒。</li>
+                <li>🔥 連擊系統：連續答對會提升攻擊力。</li>
+                <li>💥 隨機爆擊：答對時機率觸發雙倍傷害。</li>
+                <li>😡 狂暴模式：魔王血量 < 50%時會發紅光，此時魔王反擊傷害加倍 (-40)！</li>
             </div>
             <br>
-            <button onclick="startGame()">進入戰場！</button>
+            <button onclick="startGame()" style="padding: 10px 40px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ffcc00; border: none; border-radius: 5px;">正式開戰！</button>
         </div>
     </div>
 
     <div id="summary-screen" class="overlay-screen" style="display: none;">
         <div class="modal-content">
-            <div id="result-status">結果</div>
-            <div id="review-area" style="display: none;">
-                <h3 style="margin-top: 0;">錯題回顧</h3>
+            <h1 id="result-status" style="font-size: 48px; margin-bottom: 10px;">結果</h1>
+            <div id="review-area">
+                <h3 style="color: #ffcc00; margin-bottom: 10px; text-align: left;">本次戰鬥回顧：</h3>
                 <div id="review-list"></div>
             </div>
-            <div style="display: flex; gap: 15px; justify-content: center;">
-                <button id="btn-review" onclick="toggleReview()">查看錯題回顧</button>
-                <button onclick="location.reload()">重新開始</button>
-            </div>
+            <button onclick="location.reload()" style="padding: 10px 40px; font-size: 18px; font-weight: bold; cursor: pointer; background: #ffcc00; border: none; border-radius: 5px; margin-top: 10px;">重新開始</button>
         </div>
     </div>
 
     <div id="stage">
-        <div class="health-container" id="player-ui">
-            <div id="display-player-name" style="font-weight: bold; color: #3498db;">玩家</div>
+        <div class="health-container" style="left: 20px;">
+            <div id="display-player-name" style="color: #3498db; font-weight: bold;">戰士</div>
             <div class="hp-bar"><div id="player-hp" class="hp-fill"></div></div>
         </div>
-        <div class="health-container" id="enemy-ui">
-            <div style="font-weight: bold; color: #e74c3c;">甜點星人</div>
+        <div class="health-container" style="right: 20px; text-align: right;">
+            <div style="color: #e74c3c; font-weight: bold;">甜點星人</div>
             <div class="hp-bar"><div id="enemy-hp" class="hp-fill" style="background: #f00;"></div></div>
         </div>
         <div id="timer">7</div>
@@ -143,39 +128,59 @@
     </div>
 
     <div id="quiz-box">
-        <h2 id="question-text" style="margin: 0;">載入中...</h2>
-        <div class="options">
-            <button onclick="handleBtnClick(0)" id="opt0">選項 A</button>
-            <button onclick="handleBtnClick(1)" id="opt1">選項 B</button>
-        </div>
+        <h2 id="question-text" style="font-size: 22px; margin-bottom: 10px;">載入中...</h2>
+        <div class="options-grid" id="options-container"></div>
     </div>
 
 <script>
     const quizData = [
-        { q: "成人每日建議飲水量是體重(kg)乘以多少？", options: ["30-35cc", "10-15cc"], correct: 0, move: "水之波導！" },
-        { q: "攝取過多手搖飲，最直接影響的健康指標是？", options: ["視力衰退", "血糖與體脂"], correct: 1, move: "數據淨化！" },
-        { q: "哪種營養素是人體組織修復與肌肉合成的主要來源？", options: ["蛋白質", "單糖類"], correct: 0, move: "肌肉強化！" },
-        { q: "長期『久坐』對身體最明顯的危害是？", options: ["心肺與代謝下降", "頭髮生長變慢"], correct: 0, move: "深蹲反擊！" },
-        { q: "每週應至少進行多少分鐘的中強度有氧運動？", options: ["150 分鐘", "30 分鐘"], correct: 0, move: "有氧衝擊！" },
-        { q: "為了維護睡眠品質，睡前應避免？", options: ["藍光螢幕刺激", "喝溫白開水"], correct: 0, move: "安眠護盾！" },
-        { q: "護眼原則：用眼 20 分鐘後應遠眺幾秒？", options: ["60 秒", "20 秒"], correct: 1, move: "視力修復！" },
-        { q: "配戴眼鏡若產生視覺暈眩，首要措施是？", options: ["立即取下休息", "繼續配戴"], correct: 0, move: "系統修復！" },
-        { q: "哪種行為有助於活化副交感神經以放鬆壓力？", options: ["腹式深呼吸", "快速憋氣"], correct: 0, move: "正念衝擊！" }
+        { q: "成人每日建議飲水量是體重(kg)乘以多少？", options: ["30-35cc", "10-15cc", "50-60cc", "5cc"], correct: 0 },
+        { q: "攝取過多手搖飲，最直接影響的健康指標是？", options: ["視力衰退", "血糖與體脂", "聽力受損", "身高"], correct: 1 },
+        { q: "世衛建議，成年人每週應進行多少分鐘中強度運動？", options: ["150 分鐘", "30 分鐘", "60 分鐘", "500 分鐘"], correct: 0 },
+        { q: "長期『久坐』對身體最明顯的危害是？", options: ["心肺代謝下降", "頭髮變長", "食慾增加", "手指變粗"], correct: 0 },
+        { q: "護眼原則：用眼 20 分鐘後應遠眺 20 秒，距離幾呎？", options: ["20 呎", "2 呎", "50 呎", "1 呎"], correct: 0 },
+        { q: "為了維持睡眠品質，睡前一小時應避免？", options: ["藍光螢幕刺激", "喝溫白開水", "聽輕音樂", "深呼吸"], correct: 0 },
+        { q: "哪種營養素是人體修復與肌肉合成的主要來源？", options: ["蛋白質", "單糖類", "維生素 K", "飽和脂肪"], correct: 0 },
+        { q: "健康的腰圍標準，女性應小於多少公分？", options: ["80 公分", "90 公分", "100 公分", "70 公分"], correct: 0 },
+        { q: "每日建議至少攝取幾份蔬菜？", options: ["3 份", "0 份", "10 份", "1 份"], correct: 0 },
+        { q: "當感到壓力時，哪種行為有助於活化副交感神經放鬆？", options: ["深長腹式呼吸", "連續憋氣", "大口吃甜點", "整晚不睡"], correct: 0 },
+        { q: "所謂『亞健康』狀態，是指身體處於？", options: ["健康與疾病之間", "完全康復", "重度昏迷", "超級健康"], correct: 0 },
+        { q: "預防骨質疏鬆，除了補充鈣質外，還需要維生素？", options: ["維生素 D", "維生素 B12", "維生素 E", "維生素 A"], correct: 0 },
+        { q: "洗手時使用肥皂搓揉至少幾秒，才能有效殺菌？", options: ["20 秒", "2 秒", "5 秒", "60 秒"], correct: 0 },
+        { q: "正常成年人安靜心跳率，通常在每分鐘幾次之間？", options: ["60-100 次", "150-200 次", "20-30 次", "120 次"], correct: 0 },
+        { q: "咖啡因建議在睡前幾小時停止攝取？", options: ["6-8 小時", "10 分鐘", "1 小時", "24 小時"], correct: 0 },
+        { q: "健康的 BMI 值（體格指數）範圍落在？", options: ["18.5 - 24", "30 - 35", "10 - 15", "40 以上"], correct: 0 },
+        { q: "水果富含哪種維生素，能幫助傷口癒合與抗氧化？", options: ["維生素 C", "維生素 D", "鈣質", "蛋白質"], correct: 0 },
+        { q: "規律進行『重量訓練』的主要好處是？", options: ["增加肌肉與代謝", "增加身高", "改變膚色", "提升視力"], correct: 0 },
+        { q: "充足睡眠對於大腦的主要功能是？", options: ["清除廢物與記憶鞏固", "加速老化", "減少作夢", "縮小體積"], correct: 0 },
+        { q: "過量攝取食鹽（鈉）最容易導致什麼問題？", options: ["血壓升高", "牙齒變白", "聽力變好", "頭髮變黑"], correct: 0 },
+        { q: "下列哪種脂肪屬於對心血管有益的『好脂肪』？", options: ["不飽和脂肪", "反式脂肪", "飽和脂肪", "加工油脂"], correct: 0 },
+        { q: "使用電腦 30 分鐘後，建議休息多久？", options: ["5-10 分鐘", "1 分鐘", "30 分鐘", "2 小時"], correct: 0 },
+        { q: "身體發炎反應通常與攝取過多哪種食物有關？", options: ["精製糖與加工品", "新鮮水果", "水煮蛋", "全麥麵包"], correct: 0 },
+        { q: "防曬的主要目的是為了阻隔哪種射線傷害？", options: ["紫外線 (UV)", "紅外線", "X 射線", "微波"], correct: 0 },
+        { q: "良好的社交互動對心理健康的主要幫助是？", options: ["減緩孤獨與壓力", "提高體重", "增加近視", "減少食慾"], correct: 0 }
     ];
 
-    let playerHP = 100, enemyHP = 100, currentQuizIndex = 0, timeLeft = 7, timerInterval, selectedChar = "player1.png";
-    let wrongAnswers = []; // 新增：紀錄錯題
+    let playerHP = 100, enemyHP = 100, currentQuizIndex = 0, timeLeft = 7, timerInterval;
+    let maxTime = 7, combo = 0, wrongAnswers = [], selectedChar = "player1.png";
 
-    function pickChar(num) {
-        selectedChar = "player" + num + ".png";
+    function setDiff(sec) {
+        maxTime = sec;
+        document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('selected'));
+        document.getElementById('diff-' + sec).classList.add('selected');
+    }
+
+    function pickChar(n) {
+        selectedChar = `player${n}.png`;
         document.querySelectorAll('.char-option').forEach(el => el.classList.remove('selected'));
-        document.getElementById('opt-p' + num).classList.add('selected');
+        document.getElementById(`opt-p${n}`).classList.add('selected');
     }
 
     function showInstructions() {
-        const nameInput = document.getElementById('player-name-input').value;
-        document.getElementById('display-player-name').innerText = nameInput.trim() === "" ? "玩家" : nameInput;
-        document.getElementById('player').style.backgroundImage = "url('" + selectedChar + "')";
+        const name = document.getElementById('player-name-input').value;
+        document.getElementById('display-player-name').innerText = name.trim() || "戰士";
+        document.getElementById('display-diff-sec').innerText = maxTime;
+        document.getElementById('player').style.backgroundImage = `url('${selectedChar}')`;
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('instruction-screen').style.display = 'flex';
     }
@@ -192,20 +197,25 @@
         if (playerHP <= 0 || enemyHP <= 0) return;
         const q = quizData[currentQuizIndex];
         document.getElementById('question-text').innerText = q.q;
-        document.getElementById('opt0').innerText = q.options[0];
-        document.getElementById('opt1').innerText = q.options[1];
-        startQuestionTimer();
+        const container = document.getElementById('options-container');
+        container.innerHTML = "";
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-btn';
+            btn.innerText = opt;
+            btn.onclick = () => handleBtnClick(index);
+            container.appendChild(btn);
+        });
+        startTimer();
     }
 
-    function startQuestionTimer() {
+    function startTimer() {
         clearInterval(timerInterval);
-        timeLeft = 7;
+        timeLeft = maxTime;
         document.getElementById('timer').innerText = timeLeft;
-        document.getElementById('timer').classList.remove('timer-low');
         timerInterval = setInterval(() => {
             timeLeft--;
             document.getElementById('timer').innerText = timeLeft;
-            if (timeLeft <= 3) document.getElementById('timer').classList.add('timer-low');
             if (timeLeft <= 0) { clearInterval(timerInterval); processResult(false, "時間到！"); }
         }, 1000);
     }
@@ -213,63 +223,80 @@
     function handleBtnClick(choice) {
         if (timeLeft <= 0 || playerHP <= 0 || enemyHP <= 0) return;
         clearInterval(timerInterval);
-        const q = quizData[currentQuizIndex];
-        processResult(choice === q.correct, choice === q.correct ? q.move : "糟糕！");
+        processResult(choice === quizData[currentQuizIndex].correct);
     }
 
-    function processResult(isCorrect, msg) {
+    // --- 修改：增加狂暴模式傷害邏輯 ---
+    function processResult(isCorrect, customMsg) {
         const q = quizData[currentQuizIndex];
         if (isCorrect) {
-            document.getElementById('player').classList.add('player-attack');
+            combo++;
+            let damage = 15 + (combo * 2);
+            let msg = combo > 1 ? `COMBO x${combo}!` : "正確！";
+            if (Math.random() < 0.2) { 
+                damage *= 2; 
+                msg = "💥 CRITICAL HIT!!"; 
+                document.getElementById('stage').classList.add('shake-screen');
+                setTimeout(()=>document.getElementById('stage').classList.remove('shake-screen'), 200);
+            }
+            enemyHP -= damage;
+            document.getElementById('player').classList.add('pop-animation');
             launchProjectile('player');
-            setTimeout(() => { enemyHP -= 20; updateUI(); }, 800);
-            showBattleText(msg, "#0f0");
+            showBattleFeedback(msg, "#0f0");
         } else {
-            // 答錯或超時：存入錯題紀錄
-            wrongAnswers.push({
-                q: q.q,
-                a: q.options[q.correct]
-            });
-            document.getElementById('enemy').classList.add('enemy-attack');
+            combo = 0;
+            wrongAnswers.push({ q: q.q, a: q.options[q.correct] });
+            
+            // 關鍵修改：檢查魔王是否狂暴，若是則扣 40
+            let bossDamage = 20;
+            let displayMsg = customMsg || "糟糕！";
+            
+            if (enemyHP < 50) {
+                bossDamage = 40;
+                displayMsg = "⚠️ 狂暴重擊！-40";
+            }
+            
+            playerHP -= bossDamage;
+            document.getElementById('enemy').classList.add('pop-animation');
             launchProjectile('enemy');
-            setTimeout(() => { playerHP -= 20; updateUI(); }, 800);
-            showBattleText(msg, "#f00");
+            showBattleFeedback(displayMsg, "#f00");
         }
+        
+        updateUI();
+        currentQuizIndex = (currentQuizIndex + 1) % quizData.length;
+        setTimeout(loadQuiz, 1000);
         setTimeout(() => {
-            document.getElementById('player').classList.remove('player-attack');
-            document.getElementById('enemy').classList.remove('enemy-attack');
-        }, 300);
-        if (playerHP > 0 && enemyHP > 0) {
-            currentQuizIndex = (currentQuizIndex + 1) % quizData.length;
-            setTimeout(loadQuiz, 1000);
-        }
+            document.getElementById('player').classList.remove('pop-animation');
+            document.getElementById('enemy').classList.remove('pop-animation');
+        }, 600);
     }
 
-    function launchProjectile(attacker) {
+    function launchProjectile(side) {
         const p = document.getElementById('projectile');
-        p.style.display = 'block'; p.style.animation = 'none'; void p.offsetWidth; 
-        if (attacker === 'player') {
-            p.style.backgroundImage = "url('item_good.png')";
-            p.style.left = '200px'; p.style.right = 'auto'; p.style.bottom = '150px';
-            p.style.animation = 'fly-right 0.8s forwards';
-        } else {
-            p.style.backgroundImage = "url('item_bad.png')";
-            p.style.right = '200px'; p.style.left = 'auto'; p.style.bottom = '150px';
-            p.style.animation = 'fly-left 0.8s forwards';
-        }
-        setTimeout(() => p.style.display = 'none', 800);
+        p.style.display = 'block';
+        p.style.backgroundImage = side === 'player' ? "url('item_good.png')" : "url('item_bad.png')";
+        p.style.animation = side === 'player' ? 'fly-right 0.6s forwards' : 'fly-left 0.6s forwards';
+        p.style.left = side === 'player' ? '200px' : 'auto';
+        p.style.right = side === 'player' ? 'auto' : '200px';
+        p.style.bottom = '150px';
+        setTimeout(() => p.style.display = 'none', 600);
     }
 
-    function showBattleText(text, color) {
+    function showBattleFeedback(text, color) {
         const b = document.getElementById('battle-text');
-        b.innerText = text; b.style.color = color; b.style.textShadow = `0 0 15px ${color}`;
-        b.classList.add('battle-text-pop');
-        setTimeout(() => b.classList.remove('battle-text-pop'), 600);
+        b.innerText = text; b.style.color = color;
+        b.classList.remove('pop-animation'); void b.offsetWidth;
+        b.classList.add('pop-animation');
     }
 
     function updateUI() {
-        document.getElementById('player-hp').style.width = playerHP + "%";
-        document.getElementById('enemy-hp').style.width = enemyHP + "%";
+        document.getElementById('player-hp').style.width = Math.max(0, playerHP) + "%";
+        document.getElementById('enemy-hp').style.width = Math.max(0, enemyHP) + "%";
+        
+        if (enemyHP < 50) {
+            document.getElementById('enemy').classList.add('enraged');
+        }
+
         if (enemyHP <= 0 || playerHP <= 0) {
             clearInterval(timerInterval);
             setTimeout(showSummary, 1200);
@@ -279,48 +306,28 @@
     function showSummary() {
         document.getElementById('quiz-box').style.display = 'none';
         document.getElementById('summary-screen').style.display = 'flex';
-        const resultStatus = document.getElementById('result-status');
-        const btnReview = document.getElementById('btn-review');
-
-        if (enemyHP <= 0) {
-            resultStatus.innerText = "挑戰成功！";
-            resultStatus.style.color = "#0f0";
-        } else {
-            resultStatus.innerText = "挑戰失敗";
-            resultStatus.style.color = "#f00";
-        }
-
-        // 如果沒有錯題，隱藏回顧按鈕
-        btnReview.style.display = wrongAnswers.length > 0 ? "inline-block" : "none";
+        const res = document.getElementById('result-status');
         
-        // 渲染錯題清單
-        const listContainer = document.getElementById('review-list');
-        listContainer.innerHTML = "";
-        wrongAnswers.forEach((item, index) => {
-            listContainer.innerHTML += `
-                <div class="review-item">
-                    <div class="review-q">${index + 1}. ${item.q}</div>
-                    <div class="review-a">正確答案：${item.a}</div>
-                </div>
-            `;
-        });
-    }
+        if (enemyHP <= 0) { res.innerText = "挑戰成功"; res.style.color = "#0f0"; }
+        else { res.innerText = "挑戰失敗"; res.style.color = "#f00"; }
 
-    function toggleReview() {
-        const area = document.getElementById('review-area');
-        const btn = document.getElementById('btn-review');
-        if (area.style.display === "none") {
-            area.style.display = "block";
-            btn.innerText = "隱藏回顧";
+        const list = document.getElementById('review-list');
+        if (wrongAnswers.length > 0) {
+            list.innerHTML = wrongAnswers.map((item, index) => `
+                <div class="review-item">
+                    <span style="color: #ffcc00; font-weight: bold;">[問題 ${index + 1}]</span> ${item.q}<br>
+                    <span style="color: #0f0; font-weight: bold;">✅ 正解：${item.a}</span>
+                </div>
+            `).join("");
         } else {
-            area.style.display = "none";
-            btn.innerText = "查看錯題回顧";
+            list.innerHTML = "<p style='text-align: center; font-weight: bold; color: #ffcc00;'>妳太強了！全部答對，健康滿分！</p>";
         }
     }
 
     function resetGame() {
-        playerHP = 100; enemyHP = 100; currentQuizIndex = 0; wrongAnswers = [];
-        updateUI(); loadQuiz(); 
+        playerHP = 100; enemyHP = 100; combo = 0; wrongAnswers = [];
+        document.getElementById('enemy').classList.remove('enraged');
+        updateUI(); loadQuiz();
     }
 </script>
 </body>
